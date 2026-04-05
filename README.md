@@ -227,7 +227,7 @@ print('Greenest Pixel:', rmnp_2021_greenest);
 // ------------------------------------------------------------
 // Step 2) Define spatial smoothing kernel for NDVI and elevation
 // Circular kernel radius is given in pixels (30 m pixels for Landsat)
-// NOTE: Your comment mentions reducing radius; update radius value accordingly
+
 // ------------------------------------------------------------
 var ate_kernel = ee.Kernel.circle({
   radius: 10,          // Kernel radius in pixels (e.g., 10 px ≈ 300 m at 30 m)
