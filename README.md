@@ -121,7 +121,7 @@ function add_ndvi_l8(image) {
 // ------------------------------------------------------------
 // Create a Landsat 8 ImageCollection for the study area and time window
 // Dataset : LANDSAT/LC08/C02/T1_L2 (Collection 2, Tier 1, Level-2 SR)
-// الهدف   : Build a clean growing-season collection for composite/ATEI steps
+// Build a clean growing-season collection for composite
 // ------------------------------------------------------------
 var rmnp_2021_collection = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2")
 
@@ -177,7 +177,6 @@ var Comp21 = rmnp_2021_collection.median();
 // Optional: print composite for inspection
 // print('Comp21', Comp21);
 
-
 // ------------------------------------------------------------
 // Evaluate average scene-level cloud cover across the collection
 // (metadata-based, not pixel-level QA masking)
@@ -192,7 +191,6 @@ var cloudCoverMean = cloudCoverList.reduce(ee.Reducer.mean());
 // Optional: display average cloud cover in the Console
 // print('Average Cloud Cover Range (%):', cloudCoverMean);
 
-
 // ------------------------------------------------------------
 // Visualization parameters for Landsat 8 RGB composite
 // Bands: B4 (NIR), B3 (Red), B2 (Green)
@@ -202,7 +200,6 @@ var vis_params_landsat8_rgb = {
   min: 0,
   max: 0.25
 };
-
 
 // ------------------------------------------------------------
 // Add the median composite to the map for visual inspection
@@ -292,7 +289,6 @@ var vis_params_elevation_rmnp = {
   palette: ['blue', 'green', 'yellow', 'orange', 'red', 'brown', 'white']
 };
 
-
 // ------------------------------------------------------------
 // Gradient-direction visualization (0–360 degrees)
 // Used later for NDVI and elevation gradient direction products
@@ -333,7 +329,6 @@ var ndvi_gradient_magnitude = ndvi_gradient
   .add(ndvi_gradient.select('y').pow(2))        // + dy^2
   .sqrt()                                       // sqrt(dx^2 + dy^2)
   .select(['x'], ['ndvi_grad_mag']);            // rename output band
-
 
 // ------------------------------------------------------------
 // Compute gradient direction in degrees (0–360)
@@ -377,7 +372,7 @@ var c1 = ndvi_gradient_magnitude.select(['ndvi_grad_mag'], ['c1']);
 // Parameters b and c control the Gaussian center and spread (from your paper)
 // ------------------------------------------------------------
 var b = 0.42;   // Gaussian center (NDVI peak location)
-var c = 0.06;   // Gaussian spread (controls width)
+var c = 0.16;   // Gaussian spread (controls width)
 
 
 // Compute C2 using a Gaussian-like function of smoothed NDVI
@@ -395,7 +390,6 @@ var c2 = ee.Image(Math.E).clip(rmnp_boundary)
 // Start by computing the gradient of smoothed elevation
 // ------------------------------------------------------------
 var elevation_gradient = rmnp_elevation_smoothed.gradient();
-
 
 // Compute elevation gradient magnitude: sqrt(dx^2 + dy^2)
 var elevation_gradient_magnitude = elevation_gradient
@@ -421,8 +415,8 @@ var elevation_gradient_direction = elevation_gradient
 
 
 // ------------------------------------------------------------
-// Step 7) Compute angular difference between NDVI and elevation
-// gradients (theta). This captures alignment/misalignment of
+// Step 7) Compute the angular difference between NDVI and elevation
+// gradients (theta). This captures the alignment/misalignment of
 // vegetation change vs topographic change.
 // ------------------------------------------------------------
 var theta = ndvi_gradient_direction
@@ -454,7 +448,6 @@ var c3 = theta
   .select(['ndvi_grad_dir'], ['c3']);          // Rename output band to "c3"
 
 print('C3 Component:', c3);
-
 
 // ------------------------------------------------------------
 // Optional visualization: show theta (direction difference) on map
@@ -516,7 +509,6 @@ Map.addLayer(
 // Step 11) Compute Alpine Treeline Ecotone Index (ATEI)
 // Model form: ATEI = e^x / (e^x + 1)
 // Where: x = b0 + b1*C1z + b2*C2z + b3*C3z  (z = standardized)
-// Coefficients taken from the referenced paper
 // ============================================================
 
 // Intercept term of the logistic model
@@ -527,7 +519,6 @@ var b1 = 0.42;
 var b2 = 0.58;
 var b3 = 0.56;
 
-
 // ------------------------------------------------------------
 // Compute the linear predictor (x) of the logistic model
 // ------------------------------------------------------------
@@ -537,7 +528,6 @@ var atei_sum = c1_standardized.multiply(b1)     // b1*C1z
   .add(b0)                                      // + intercept
   .select(['c1_standardized'], ['atei_sum_comp']); // Rename for clarity
 
-
 // ------------------------------------------------------------
 // Compute exp(x) term of the logistic equation
 // ------------------------------------------------------------
@@ -545,7 +535,6 @@ var atei_exponent = ee.Image(Math.E)
   .clip(rmnp_boundary)
   .pow(atei_sum)
   .select(['constant'], ['atei_exp_comp']);     // Rename for clarity
-
 
 // ------------------------------------------------------------
 // Compute ATEI probability surface: exp(x) / (exp(x) + 1)
@@ -556,7 +545,6 @@ var atei = atei_exponent
   .select(['atei_exp_comp'], ['atei']);
 
 print('ATEI Image:', atei);
-
 
 // ------------------------------------------------------------
 // Optional: compute min/max of ATEI (useful for QA and reporting)
